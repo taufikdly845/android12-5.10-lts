@@ -36,15 +36,22 @@ jobs:
 
       - name: Push to GitHub
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd kernel
+           cd kernel
 
-          git remote remove origin
+           git config --global http.version HTTP/1.1
+           git config --global http.postBuffer 1048576000
+           git config --global core.compression 0
+           git config --global pack.windowMemory 512m
+           git config --global pack.packSizeLimit 512m
+           git config --global pack.threads 2
 
-          git remote add github \
-            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+           git remote remove origin
 
-          git push github \
-            refs/heads/${{ matrix.branch }}:refs/heads/${{ matrix.branch }} \
-            --force
+           git remote add github \
+           "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+
+           git push github \
+                 refs/heads/${{ matrix.branch }}:refs/heads/${{ matrix.branch }} \
+                 --force
