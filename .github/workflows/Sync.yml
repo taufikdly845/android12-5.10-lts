@@ -1,0 +1,50 @@
+name: Sync kernel
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+ group: sync-kernel-common-lts
+ cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - android12-5.10-lts
+
+    steps:
+      - name: Disable IPv6
+        run: |
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+
+      - name: Clone upstream
+        run: |
+          git clone \
+            --branch "${{ matrix.branch }}" \
+            https://android.googlesource.com/kernel/common \
+            kernel
+
+      - name: Push to GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd kernel
+
+          git remote remove origin
+
+          git remote add github \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+
+          git push github \
+            refs/heads/${{ matrix.branch }}:refs/heads/${{ matrix.branch }} \
+            --force
